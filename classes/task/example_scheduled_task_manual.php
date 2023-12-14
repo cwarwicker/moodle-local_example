@@ -27,27 +27,38 @@ namespace local_example\task;
 
 class example_scheduled_task_manual extends \core\task\scheduled_task {
 
-    use \core\task\pollable_task_trait;
-
     public function get_name() {
         return 'Example scheduled task';
     }
 
     public function execute() {
 
-        $this->start_polling();
+        // Create progress bar with unique name.
+        // For this case, we use the class name so nothing else will overwrite it (or will it?).
+        $progress = new \core\stored_progress_bar(
+            \core\stored_progress_bar::convert_to_idnumber(get_class($this))
+        );
+
+        // Start the progress storing and don't auto render updates as it doesn't work in tasks.
+        $progress->auto_update(false);
+        $progress->start();
 
         $seconds = 30;
         for ($i = 1; $i <= $seconds; $i++) {
 
-            $percent = round(($i / 30) * 100);
-            mtrace("{$percent}% done");
-            $this->set_task_progress($percent);
+            // Manually update the percentage.
+            $percent = round(($i / $seconds) * 100);
+            $progress->update_full($percent, "I am {$percent}% done");
             sleep(1);
+
+            if ($i > 28) {
+                $progress->error('oh no i failed!');
+                return;
+            }
 
         }
 
-        $this->end_polling();
+        return true;
 
     }
 
