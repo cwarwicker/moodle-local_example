@@ -27,35 +27,35 @@ namespace local_example\task;
 
 class example_scheduled_task_iterations extends \core\task\scheduled_task {
 
-    use \core\task\pollable_task_trait;
-
     public function get_name() {
         return 'Example scheduled task';
     }
 
     public function execute() {
 
-        // Polling must be started to use the functionality.
-        $this->start_polling();
-
         // This simulates a specific count of iterations the task will do, e.g. x number of courses to loop through and do something.
-        $iterations = 10;
+        $iterations = 1000;
 
-        // We need to tell the progress trait what the total number of iterations we will be going through is.
-        $this->set_task_progress_iterations($iterations);
+        // Create progress bar with unique name.
+        // I am not sure if this will always be unique. If it's not, it will get overwritten. Can the same scheduled task run 
+        // at the same time, across multiple cron containers?
+        $progress = new \core\stored_progress_bar(
+            \core\stored_progress_bar::convert_to_idnumber(get_class($this))
+        );
+
+        // Start the progress storing and don't auto render updates as it doesn't work in tasks.
+        $progress->auto_update(false);
+        $progress->start();
 
         for ($i = 1; $i <= $iterations; $i++) {
 
             // Here we just update and tell it which one we are on and it will work out % from those.
-            $this->update_task_progress_iteration($i);
-
-            mtrace("{$i}/{$iterations}");
-            sleep(mt_rand(1, 3));
+            $progress->update($i, $iterations, 'i am at ' . $i  . ' of ' . $iterations);
+            sleep(1);
 
         }
 
-        // Remember to end polling to delete the record.
-        $this->end_polling();
+        return true;
 
     }
 

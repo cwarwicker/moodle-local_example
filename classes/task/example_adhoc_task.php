@@ -27,23 +27,27 @@ namespace local_example\task;
 
 class example_adhoc_task extends \core\task\adhoc_task {
 
-    use \core\task\pollable_task_trait;
-
     public function execute() : bool {
 
-        $this->start_polling();
+        // Create progress bar with unique name.
+        // For this case, we use the task class and ID so nothing should overwrite it.
+        $progress = new \core\stored_progress_bar(
+            \core\stored_progress_bar::convert_to_idnumber(get_class($this), $this->get_id())
+        );
+
+        // Start the progress storing.
+        $progress->start();
 
         $seconds = 30;
         for ($i = 1; $i <= $seconds; $i++) {
 
+            // Manually update the percentage.
             $percent = round(($i / $seconds) * 100);
+            $progress->update_full($percent, "{$percent}% completed");
             mtrace("{$percent}% done");
-            $this->set_task_progress($percent);
             sleep(1);
 
         }
-
-        $this->end_polling();
 
         return true;
 
